@@ -3,23 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { loginPharmacist } from '../../../../server/controllers/PharmacistController'; 
 
 const PharmacistLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    // Example hardcoded login
-    if (email === 'pharma@gmail.com' && password === '12345678') {
+    try {
+      await loginPharmacist(email, password);
       toast.success('Login successful!');
       setTimeout(() => {
-        navigate('/pharmacist-dashboard');
+        navigate('/pharmacist/dashboard');
       }, 1500);
-    } else {
-      toast.error('Invalid email or password.');
+    } catch (error) {
+      toast.error(error.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,9 +70,12 @@ const PharmacistLogin = () => {
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300"
+            disabled={loading}
+            className={`w-full bg-green-600 text-white py-2 rounded-lg font-semibold transition duration-300 ${
+              loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+            }`}
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 

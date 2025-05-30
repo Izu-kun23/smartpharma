@@ -16,8 +16,11 @@ const AdminLogin = () => {
 
     setLoading(true);
     try {
-      // Actually log in the admin!
-      await loginAdmin(email, password);
+      // Actually log in the admin! (assuming loginAdmin returns admin details)
+      const adminDetails = await loginAdmin(email, password);
+
+      // Save admin details in localStorage
+      localStorage.setItem("adminUser", JSON.stringify(adminDetails));
 
       toast.success("Login successful! 🚀");
       setTimeout(() => {

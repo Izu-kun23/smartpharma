@@ -156,31 +156,23 @@ export const fetchPharmacists = async () => {
 
 
 export const loginAdmin = async (email, password) => {
-  try {
-    // Sign in user with Firebase Auth
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const { uid } = userCredential.user;
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const { uid } = userCredential.user;
 
-    // Check if user exists in "admins" collection in Firestore
-    const adminDocRef = doc(db, "admins", uid);
-    const adminDocSnap = await getDoc(adminDocRef);
+  const adminDocRef = doc(db, "admins", uid);
+  const adminDocSnap = await getDoc(adminDocRef);
 
-    if (!adminDocSnap.exists()) {
-      // User signed in but is not an admin
-      await auth.signOut(); // Sign out immediately
-      throw new Error("User is not an admin");
-    }
-
-    // Return admin user data
-    return {
-      uid,
-      ...adminDocSnap.data(),
-    };
-  } catch (error) {
-    console.error("Admin login failed:", error);
-    throw error;
+  if (!adminDocSnap.exists()) {
+    await auth.signOut();
+    throw new Error("User is not an admin");
   }
+
+  return {
+    uid,
+    ...adminDocSnap.data(), // includes name, role, email, createdAt
+  };
 };
+
 
 export const signOutAdmin = async () => {
   try {

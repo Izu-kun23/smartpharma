@@ -16,7 +16,7 @@ const PharmacistSidebar = () => {
     { label: 'Categories', icon: <ListOrdered className="w-5 h-5" />, path: '/pharmacist/categories' },
     { label: 'Products', icon: <Boxes className="w-5 h-5" />, path: '/pharmacist-products' },
     { label: 'Orders', icon: <FileText className="w-5 h-5" />, path: '/pharmacist-orders' },
-    { label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/pharmacist-settings' },
+    { label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/pharmacist/pharm-settings' },
   ];
 
   return (

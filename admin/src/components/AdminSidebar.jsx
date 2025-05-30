@@ -20,7 +20,7 @@ const AdminSidebar = () => {
     { label: 'Pharmacies', icon: <Building2 className="w-5 h-5" />, path: '/admin/pharmacy-list' },
     { label: 'Users', icon: <UsersRound className="w-5 h-5" />, path: '/admin/user-list' },
     { label: 'Orders', icon: <ShoppingCart className="w-5 h-5" />, path: '/admin-orders' },
-    { label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/admin-settings' },
+    { label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/admin/settings' },
   ];
 
   return (
