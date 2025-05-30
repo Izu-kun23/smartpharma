@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { User, ShieldCheck, Stethoscope, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  fetchUsers,
+  fetchAdmins,
+  fetchPharmacists,
   fetchPharmacies,
-  addUser,
+  addAdmin,
+  addPharmacist,
 } from "../../../../server/controllers/AdminController";
 
 const AdminUserList = () => {
@@ -23,13 +25,26 @@ const AdminUserList = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const fetchedUsers = await fetchUsers();
-        setUsers(fetchedUsers);
+        const [admins, pharmacists] = await Promise.all([
+          fetchAdmins(),
+          fetchPharmacists(),
+        ]);
+
+        const fetchedUsers = [...admins, ...pharmacists];
+
+        const normalizedUsers = fetchedUsers.map((u) => ({
+          id: u.id || u._id || u.userId || "",
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          pharmacy: u.pharmacy || null,
+        }));
+
+        setUsers(normalizedUsers);
       } catch (error) {
         console.error("Failed to fetch users:", error);
       }
     };
-
     loadUsers();
   }, []);
 
@@ -38,7 +53,6 @@ const AdminUserList = () => {
       try {
         const pharms = await fetchPharmacies();
 
-        // Normalize pharmacies with consistent keys
         const normalizedPharms = pharms.map((p) => ({
           pharmacyId: p.pharmacyId || p.id || p._id || "",
           pharmacyName: p.pharmacyName || p.name || "Unnamed Pharmacy",
@@ -70,7 +84,7 @@ const AdminUserList = () => {
       pharmacy.state,
       pharmacy.zipCode,
       pharmacy.country,
-    ].filter(Boolean); // remove empty or falsy values
+    ].filter(Boolean);
 
     return parts.join(", ");
   };
@@ -82,6 +96,7 @@ const AdminUserList = () => {
       alert("Please fill all required fields");
       return;
     }
+
     if (newUser.role === "pharmacist" && !newUser.pharmacyId) {
       alert("Please select a pharmacy");
       return;
@@ -89,20 +104,28 @@ const AdminUserList = () => {
 
     setLoading(true);
     try {
-      const userData = {
-        name: newUser.name,
-        email: newUser.email,
-        password: newUser.password,
-        role: newUser.role,
-        ...(newUser.role === "pharmacist" && { pharmacyId: newUser.pharmacyId }),
-      };
+      let uid;
+      if (newUser.role === "admin") {
+        uid = await addAdmin({
+          name: newUser.name,
+          email: newUser.email,
+          password: newUser.password,
+        });
+      } else if (newUser.role === "pharmacist") {
+        uid = await addPharmacist({
+          name: newUser.name,
+          email: newUser.email,
+          password: newUser.password,
+          pharmacyId: newUser.pharmacyId,
+        });
+      }
 
-      const uid = await addUser(userData);
-
-      // Find pharmacy info locally for display
-      const addedPharmacy = pharmacies.find(
-        (p) => String(p.pharmacyId) === String(newUser.pharmacyId)
-      );
+      const addedPharmacy =
+        newUser.role === "pharmacist"
+          ? pharmacies.find(
+              (p) => String(p.pharmacyId) === String(newUser.pharmacyId)
+            )
+          : null;
 
       setUsers((prev) => [
         ...prev,
@@ -240,6 +263,7 @@ const AdminUserList = () => {
                     disabled={loading}
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="email">
                     Email
@@ -254,6 +278,7 @@ const AdminUserList = () => {
                     disabled={loading}
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="password">
                     Password
@@ -268,6 +293,7 @@ const AdminUserList = () => {
                     disabled={loading}
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700" htmlFor="role">
                     Role
@@ -278,7 +304,7 @@ const AdminUserList = () => {
                     onChange={(e) =>
                       setNewUser({ ...newUser, role: e.target.value, pharmacyId: "" })
                     }
-                    className="mt-1 block w-full border-gray-100 rounded-md shadow-sm h-8"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm h-8 border"
                     disabled={loading}
                   >
                     <option value="admin">Admin</option>
@@ -288,20 +314,21 @@ const AdminUserList = () => {
 
                 {newUser.role === "pharmacist" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700" htmlFor="pharmacy">
+                    <label
+                      className="block text-sm font-medium text-gray-700"
+                      htmlFor="pharmacy"
+                    >
                       Pharmacy
                     </label>
                     <select
                       id="pharmacy"
                       value={newUser.pharmacyId}
                       onChange={(e) => setNewUser({ ...newUser, pharmacyId: e.target.value })}
-                      className="mt-1 block w-full border-gray-100 rounded-md shadow-sm h-8"
-                      required
-                      disabled={loading || pharmacies.length === 0}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm h-8 border"
+                      required={newUser.role === "pharmacist"}
+                      disabled={loading}
                     >
-                      <option value="">
-                        {pharmacies.length === 0 ? "Loading pharmacies..." : "Select Pharmacy"}
-                      </option>
+                      <option value="">Select a Pharmacy</option>
                       {pharmacies.map((pharmacy) => (
                         <option key={pharmacy.pharmacyId} value={pharmacy.pharmacyId}>
                           {pharmacy.pharmacyName}
@@ -311,19 +338,19 @@ const AdminUserList = () => {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                <div className="flex justify-end space-x-2 pt-4">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
                     disabled={loading}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={loading}
                   >
                     {loading ? "Adding..." : "Add User"}
                   </button>

@@ -48,91 +48,112 @@ export const fetchPharmacies = async () => {
   }
 };
 
-export const addUser = async (userData) => {
-  const { name, email, password, role, pharmacyId = null } = userData;
-
+export const addAdmin = async ({ name, email, password }) => {
   try {
     // Create user in Firebase Authentication
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { uid } = userCredential.user;
 
-    // Determine Firestore collection based on role
-    const collectionName = role === "admin" ? "admins" : "pharmacists";
-    const userDocRef = doc(db, collectionName, uid);
-
-    // Base user document data
+    // Create Admin Document
+    const userDocRef = doc(db, "admins", uid);
     const userDocData = {
       userId: uid,
       name,
       email,
-      role,
-      createdAt: new Date(),
+      role: "admin",
+      createdAt: new Date()
     };
 
-    if (role === "pharmacist") {
-      if (!pharmacyId) {
-        throw new Error("Pharmacy ID is required for pharmacists");
-      }
-
-      // Fetch pharmacy details from Firestore
-      const pharmacyDocRef = doc(db, "pharmacies", pharmacyId);
-      const pharmacyDocSnap = await getDoc(pharmacyDocRef);
-
-      if (!pharmacyDocSnap.exists()) {
-        throw new Error("Pharmacy not found");
-      }
-
-      const pharmacyData = pharmacyDocSnap.data();
-
-      // Assign pharmacyId and pharmacy details
-      userDocData.pharmacyId = pharmacyId;
-      userDocData.pharmacy = {
-        pharmacyName: pharmacyData.pharmacyName || "",
-        address: pharmacyData.address || "",
-        // Add more pharmacy fields here if needed
-      };
-    }
-
-    // Save user document to Firestore
     await setDoc(userDocRef, userDocData);
 
     return uid;
   } catch (error) {
-    console.error("Error adding user:", error);
-    throw new Error("Failed to add user");
+    console.error("Error adding admin:", error);
+    throw new Error("Failed to add admin");
   }
 };
 
-export const fetchUsers = async () => {
+// Function to add a Pharmacist
+export const addPharmacist = async ({ name, email, password, pharmacyId }) => {
+  try {
+    if (!pharmacyId) {
+      throw new Error("Pharmacy ID is required for pharmacists");
+    }
+
+    // Create user in Firebase Authentication
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const { uid } = userCredential.user;
+
+    // Fetch pharmacy details
+    const pharmacyDocRef = doc(db, "pharmacies", pharmacyId);
+    const pharmacyDocSnap = await getDoc(pharmacyDocRef);
+
+    if (!pharmacyDocSnap.exists()) {
+      throw new Error("Pharmacy not found");
+    }
+
+    const pharmacyData = pharmacyDocSnap.data();
+
+    // Create Pharmacist Document
+    const userDocRef = doc(db, "pharmacists", uid);
+    const userDocData = {
+      userId: uid,
+      name,
+      email,
+      role: "pharmacist",
+      pharmacyId,
+      pharmacy: {
+        pharmacyName: pharmacyData.pharmacyName || "",
+        address: pharmacyData.address || "",
+      },
+      createdAt: new Date()
+    };
+
+    await setDoc(userDocRef, userDocData);
+
+    return uid;
+  } catch (error) {
+    console.error("Error adding pharmacist:", error);
+    throw new Error("Failed to add pharmacist");
+  }
+};
+
+export const fetchAdmins = async () => {
   try {
     const adminsCol = collection(db, "admins");
-    const pharmacistsCol = collection(db, "pharmacists");
-
-    // Fetch admins
     const adminsSnapshot = await getDocs(adminsCol);
-    const admins = adminsSnapshot.docs.map(doc => ({
+
+    const admins = adminsSnapshot.docs.map((doc) => ({
       id: doc.id,
       role: "admin",
       ...doc.data(),
     }));
 
-    // Fetch pharmacists
+    return admins;
+  } catch (error) {
+    console.error("Error fetching admins:", error);
+    throw error;
+  }
+};
+
+export const fetchPharmacists = async () => {
+  try {
+    const pharmacistsCol = collection(db, "pharmacists");
     const pharmacistsSnapshot = await getDocs(pharmacistsCol);
-    const pharmacists = pharmacistsSnapshot.docs.map(doc => ({
+
+    const pharmacists = pharmacistsSnapshot.docs.map((doc) => ({
       id: doc.id,
       role: "pharmacist",
       ...doc.data(),
     }));
 
-    // Combine both lists
-    const users = [...admins, ...pharmacists];
-
-    return users;
+    return pharmacists;
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("Error fetching pharmacists:", error);
     throw error;
   }
 };
+
 
 export const loginAdmin = async (email, password) => {
   try {
@@ -157,6 +178,16 @@ export const loginAdmin = async (email, password) => {
     };
   } catch (error) {
     console.error("Admin login failed:", error);
+    throw error;
+  }
+};
+
+export const signOutAdmin = async () => {
+  try {
+    await signOut(auth);
+    console.log("Admin signed out successfully");
+  } catch (error) {
+    console.error("Error signing out admin:", error);
     throw error;
   }
 };

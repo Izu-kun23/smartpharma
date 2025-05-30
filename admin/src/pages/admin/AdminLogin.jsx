@@ -16,7 +16,9 @@ const AdminLogin = () => {
 
     setLoading(true);
     try {
-      const adminUser = await loginAdmin(email, password);
+      // Actually log in the admin!
+      await loginAdmin(email, password);
+
       toast.success("Login successful! 🚀");
       setTimeout(() => {
         navigate("/admin/dashboard");
