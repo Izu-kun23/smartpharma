@@ -6,6 +6,7 @@ import {
   ListOrdered,
   Building2,
   ShoppingCart,
+  UsersRound,
   Settings
 } from 'lucide-react';
 
@@ -16,7 +17,8 @@ const AdminSidebar = () => {
     { label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, path: '/admin/dashboard' },
     { label: 'Categories', icon: <ListOrdered className="w-5 h-5" />, path: '/admin-categories' },
     { label: 'Products', icon: <Boxes className="w-5 h-5" />, path: '/admin-products' },
-    { label: 'Pharmacies', icon: <Building2 className="w-5 h-5" />, path: '/admin-pharmacies' },
+    { label: 'Pharmacies', icon: <Building2 className="w-5 h-5" />, path: '/admin/pharmacy-list' },
+    { label: 'Users', icon: <UsersRound className="w-5 h-5" />, path: '/admin/user-list' },
     { label: 'Orders', icon: <ShoppingCart className="w-5 h-5" />, path: '/admin-orders' },
     { label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/admin-settings' },
   ];
