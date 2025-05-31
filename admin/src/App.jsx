@@ -14,6 +14,7 @@ import AddPharmacy from './pages/admin/AddPharmacy';
 import AdminUserList from './pages/admin/AdminUserList';
 import AdminSettings from './pages/admin/AdminSettings';
 import PharmacistSettings from './pages/pharmacist/PharmacistSettings';
+import PharmacistAddCategory from './pages/pharmacist/PharmacistAddCategory';
 
 const App = () => {
   return (
@@ -43,6 +44,7 @@ const App = () => {
         <Route path="/pharmacist" element={<PharmacistLayout />}>
           <Route path="dashboard" element={<PharmacistDashboard />} />
           <Route path="categories" element={<PharmacistCategory />} />
+          <Route path="add-categories" element={<PharmacistAddCategory />} />
           <Route path="pharm-settings" element={<PharmacistSettings />} />
           {/* Add more pharmacist child routes here */}
         </Route>

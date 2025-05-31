@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { doc, setDoc, collection, getDocs, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, query, where, collection, addDoc,  getDocs, serverTimestamp, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "../firebaseConfig";
 
@@ -99,6 +99,71 @@ export const changePharmacistPassword = async (currentPassword, newPassword) => 
     await updatePassword(currentUser, newPassword);
   } catch (error) {
     console.error("Error changing password:", error);
+    throw error;
+  }
+};
+
+export const addCategory = async (name, description, imageFile) => {
+  try {
+    // Retrieve pharmacist data from localStorage
+    const storedPharmacist = localStorage.getItem("pharmacistUser");
+    if (!storedPharmacist) throw new Error("No authenticated pharmacist found.");
+
+    const pharmacistData = JSON.parse(storedPharmacist);
+    const pharmacyId = pharmacistData.pharmacyId;
+
+    if (!pharmacyId) throw new Error("No pharmacy ID associated with this pharmacist.");
+
+    // Generate a unique category ID using Date.now() + random string (or any preferred ID strategy)
+    const categoryId = `category-${Date.now()}`;
+
+    // Upload the image to Firebase Storage
+    const imageRef = ref(storage, `categoryImages/${categoryId}-${imageFile.name}`);
+    await uploadBytes(imageRef, imageFile);
+
+    // Get the image download URL
+    const imageUrl = await getDownloadURL(imageRef);
+
+    // Construct the category object
+    const newCategory = {
+      id: categoryId,
+      name,
+      description,
+      imageUrl,
+      pharmacyId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      productCount: 0,
+    };
+
+    // Add the category to Firestore
+    const categoryRef = collection(db, "categories");
+    await addDoc(categoryRef, newCategory);
+
+    console.log("Category added successfully!");
+    return newCategory;
+  } catch (error) {
+    console.error("Error adding category:", error);
+    throw error;
+  }
+};
+
+export const fetchCategoriesByPharmacy = async (pharmacyId) => {
+  try {
+    if (!pharmacyId) throw new Error("Pharmacy ID is required to fetch categories.");
+
+    const categoryRef = collection(db, "categories");
+    const q = query(categoryRef, where("pharmacyId", "==", pharmacyId));
+    const querySnapshot = await getDocs(q);
+
+    const categories = [];
+    querySnapshot.forEach((doc) => {
+      categories.push({ id: doc.id, ...doc.data() });
+    });
+
+    return categories;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
     throw error;
   }
 };
